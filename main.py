@@ -1,28 +1,21 @@
 from fastapi import FastAPI, UploadFile, File
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from ultralytics import YOLO
 import cv2
 import numpy as np
-import os
+import uvicorn
 
 app = FastAPI()
 
-# ===== LOAD MODEL (CHỐNG LỖI ĐƯỜNG DẪN) =====
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# =====================
+# LOAD MODEL (1 LẦN)
+# =====================
+model = YOLO("lua_best.pt")
 
-app.mount(
-    "/static",
-    StaticFiles(directory=os.path.join(BASE_DIR, "frontend")),
-    name="static"
-)
-
-MODEL_PATH = os.path.join(BASE_DIR, "lua_best.pt")
-model = YOLO(MODEL_PATH)
-
-# ===== CORS =====
+# =====================
+# CORS
+# =====================
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -31,54 +24,55 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ===== ROUTE TEST =====
-@app.get("/")
-def home():
-    return {"message": "API YOLO đang chạy OK"}
+# =====================
+# WARM-UP MODEL (CỰC QUAN TRỌNG)
+# =====================
+dummy_img = np.zeros((512, 512, 3), dtype=np.uint8)
+model.predict(dummy_img, imgsz=512, conf=0.4, device="cpu", verbose=False)
 
-@app.get("/rice")
-def rice_page():
-    return FileResponse(os.path.join(BASE_DIR, "frontend", "rice.html"))
-
-@app.get("/")
-def home_page():
-    return FileResponse(os.path.join(BASE_DIR, "frontend", "index.html"))
-
-
-# ===== API DETECT =====
+# =====================
+# API DETECT
+# =====================
 @app.post("/detect")
 async def detect_image(file: UploadFile = File(...)):
-    try:
-        # đọc ảnh từ upload
-        bytes_data = await file.read()
-        nparr = np.frombuffer(bytes_data, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    # đọc ảnh
+    bytes_data = await file.read()
+    img_array = np.frombuffer(bytes_data, np.uint8)
+    img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
 
-        if img is None:
-            return JSONResponse(
-                status_code=400,
-                content={"error": "Ảnh không hợp lệ"}
-            )
+    # inference tối ưu
+    results = model.predict(
+        img,
+        imgsz=512,
+        conf=0.4,
+        iou=0.5,
+        device="cpu",
+        verbose=False
+    )
 
-        results = model.predict(img)
+    preds = []
+    for r in results:
+        if r.boxes is None:
+            continue
+        for box in r.boxes:
+            cls_id = int(box.cls)
+            preds.append({
+                "class": cls_id,
+                "class_name": model.names.get(cls_id, str(cls_id)),
+                "confidence": float(box.conf),
+                "bbox": box.xyxy.tolist()
+            })
 
-        preds = []
-        for r in results:
-            for box in r.boxes:
-                cls_id = int(box.cls)
-                cls_name = model.names[cls_id]
+    return JSONResponse(content={"predictions": preds})
 
-                preds.append({
-                    "class_id": cls_id,
-                    "class_name": cls_name,
-                    "confidence": float(box.conf),
-                    "bbox": box.xyxy.tolist()
-                })
 
-        return JSONResponse(content={"predictions": preds})
+# =====================
+# HEALTH CHECK (GIỮ SERVER TỈNH)
+# =====================
+@app.get("/")
+def root():
+    return {"status": "ok"}
 
-    except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"error": str(e)}
-        )
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000, workers=1)
