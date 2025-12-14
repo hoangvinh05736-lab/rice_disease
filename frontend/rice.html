@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/static/rice_style.css" />
+    <title>Chuẩn đoán bệnh ở cây lúa</title>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Chuẩn đoán bệnh ở cây lúa</h2>
+      <input type="file" id="input_image" accept="image/*" /><br />
+      <img id="preview" />
+      <button onclick="upload_image()">Gửi ảnh</button>
+      <div id="result"></div>
+      <button id="back">Trở về</button>
+      <p id="dg" style="display: none">Đã gửi</p>
+    </div>
+    <script src="/static/rice_disease.js"></script>
+  </body>
+</html>

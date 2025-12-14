@@ -1,0 +1,64 @@
+body {
+  background: #eef1f7;
+  font-family: Arial;
+}
+
+.container {
+  width: 350px;
+  margin: 80px auto;
+  padding: 20px;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+input {
+  width: 94%;
+  padding: 10px;
+  margin: 8px 0;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  background: #4a67ff;
+  border: none;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: darkviolet;
+  opacity: 0.9;
+}
+
+.toggle {
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+#switch {
+  color: #4a67ff;
+  cursor: pointer;
+}
+#switch:hover {
+  color: darkviolet;
+  opacity: 0.9;
+}
+#rice_disease {
+  height: 120px;
+  width: 200px;
+  margin-left: 75px;
+  margin-bottom: 5px;
+  font-size: 100%;
+}
+#cirtus_disease {
+  height: 120px;
+  width: 200px;
+  margin-left: 75px;
+  margin-bottom: 5px;
+  font-size: 100%;
+}
